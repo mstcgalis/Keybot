@@ -1,0 +1,15 @@
+# Ignore build output
+build/
+
+# Ignore device specific configuration files
+sdkconfig
+sdkconfig.old
+
+# Ignore editor and IDE files
+.vscode/
+.idea/
+
+# Ignore system generated files
+*.swp
+.DS_Store
+Thumbs.db
