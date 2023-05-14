@@ -122,6 +122,7 @@ void app_main(void)
                     // Reset time_above_threshold_ms and time_below_threshold_ms
                     time_above_threshold_ms = 0;
                     time_below_threshold_ms = 0;
+                }
             } else {
                 // Reset time_above_threshold_ms and time_below_threshold_ms
                 time_above_threshold_ms = 0;
