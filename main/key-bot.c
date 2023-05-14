@@ -109,15 +109,11 @@ void app_main(void)
             // Determine whether touch_value is above or below threshold
             momentary_key_state = (touch_value < TOUCH_THRESHOLD);
             
-            ESP_LOGI("debug","momentary key state: %s | key state: %s | touch value: %d ", momentary_key_state ? "present" : "not present", key_state ? "present" : "not present", touch_value);
-            
             // If bellow_threshold is not the same as key_state, aka the key state has changed
             if (momentary_key_state != key_state) {
                 // Update time_above_threshold_ms or time_below_threshold_ms accordingly
                 uint32_t* time_ptr = momentary_key_state ? &time_below_threshold_ms : &time_above_threshold_ms;
                 *time_ptr += 100;
-                
-                ESP_LOGI("debug","momentary key state: %s | key state: %s | touch value: %d | %lu", momentary_key_state ? "present" : "not present", key_state ? "present" : "not present", touch_value, *time_ptr);
 
                 // Check if the time threshold has been reached
                 if (*time_ptr >= TIME_THRESHOLD * 1000) {
