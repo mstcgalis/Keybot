@@ -23,8 +23,9 @@ static const char *TAG = "key-bot";
 #define TOUCH_PAD_NUM 0
 // touch threshold
 #define TOUCH_THRESHOLD 430
-// used to filter out noise, value has to change by at least this amount to be registered
-#define TOUCH_HYSTERESIS 20
+
+// bool to indicate if the sensor is active (key is on the nail)
+bool key_present = false;
 
 #ifndef INET6_ADDRSTRLEN
 #define INET6_ADDRSTRLEN 48
@@ -55,17 +56,6 @@ void time_sync_notification_cb(struct timeval *tv)
     ESP_LOGI(TAG, "Notification of a time synchronization event");
 }
 
-// Debounce algorithm
-uint16_t debounce(uint16_t current_value, uint16_t previous_value, uint16_t threshold, uint16_t hysteresis) {
-    if (current_value < threshold && previous_value >= threshold + hysteresis) {
-        return current_value;
-    } else if (current_value >= threshold && previous_value <= threshold - hysteresis) {
-        return current_value;
-    } else {
-        return previous_value;
-    }
-}
-
 void app_main(void)
 {
     // Initialize NVS
@@ -81,6 +71,7 @@ void app_main(void)
         time(&now);
     }
     char strftime_buf[64];
+
     // Set timezone to Central European Summer Time (CEST)
     setenv("TZ", "CET-1CEST,M3.5.0,M10.5.0/3", 1);
     tzset();
@@ -93,35 +84,34 @@ void app_main(void)
     gpio_set_direction(TOUCH_PAD_NUM, GPIO_MODE_INPUT);
 
     // Infinite loop
-        while(1) {
-        // get current time
+    while(1) {
+        // Read touch value
+        uint16_t touch_value;
+        esp_err_t ret = touch_pad_read(TOUCH_PAD_NUM, &touch_value);
+
+        // Check if key is present
+        if (ret == ESP_OK) {
+            if (touch_value < TOUCH_THRESHOLD) {
+                // Key is present
+                key_present = true;
+            }
+            else {
+                // Key is not present
+                key_present = false;
+            }
+        } else {
+            ESP_LOGE(TAG, "Error reading touch sensor of %d: %s\n", TOUCH_PAD_NUM, esp_err_to_name(ret));
+        }
+
+        // Get current time
         time(&now);
         localtime_r(&now, &timeinfo);
         // format time
         strftime(strftime_buf, sizeof(strftime_buf), "%Y-%m-%dT%H:%M:%S%z", &timeinfo);
+        // Print current time | touch value | key present bool
+        ESP_LOGI(TAG, "%s | Touch value: %d | Key: %s", strftime_buf, touch_value, key_present ? "present" : "not present");
 
-        // Read touch value
-        uint16_t touch_value;
-        static uint16_t previous_touch_value = 0;
-        esp_err_t ret = touch_pad_read(TOUCH_PAD_NUM, &touch_value);
-        touch_value = debounce(touch_value, previous_touch_value, TOUCH_THRESHOLD, TOUCH_HYSTERESIS);
-        previous_touch_value = touch_value;
-
-        // Print current time and touch value
-        localtime_r(&now, &timeinfo);
-        strftime(strftime_buf, sizeof(strftime_buf), "%c %Z", &timeinfo);
-        ESP_LOGI(TAG, "Time: %s | Touch value: %d", strftime_buf, touch_value);
-
-        if (ret == ESP_OK) {
-            if (touch_value < TOUCH_THRESHOLD) {
-                printf("Key detected on GPIO %d\n", TOUCH_PAD_NUM);
-            }
-            else {
-                printf("No key detected on GPIO %d\n", TOUCH_PAD_NUM);
-            }
-        } else {
-            printf("Error reading touch sensor of %d: %s\n", TOUCH_PAD_NUM, esp_err_to_name(ret));
-        }
+        // Sleep for 100ms
         vTaskDelay(100 / portTICK_PERIOD_MS);
     }
 }
