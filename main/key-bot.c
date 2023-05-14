@@ -23,7 +23,7 @@ static const char *TAG = "key-bot";
 #define TOUCH_PAD_NUM 0
 // Touch threshold
 #define TOUCH_THRESHOLD 430
-// Set the time threshold in seconds (how long has the change in touch_value be to change the key_present bool)
+// Set the time threshold in seconds (how long has the change in touch_value be to change the key_state bool)
 #define TIME_THRESHOLD 5
 
 #ifndef INET6_ADDRSTRLEN
@@ -83,11 +83,13 @@ void app_main(void)
     gpio_set_direction(TOUCH_PAD_NUM, GPIO_MODE_INPUT);
 
     // Variable storing the key state (key is present on the nail)
-    bool key_present = false;
+    bool key_state = false;
     // Variable storing the time below the threshold in milliseconds (true)
-    int time_below_threshold_ms = 0;
+    uint32_t time_below_threshold_ms = 0;
     // Variable storing the time above the threshold in milliseconds (false)
-    int time_above_threshold_ms = 0;
+    uint32_t time_above_threshold_ms = 0;
+    // Variable storing the current touch value
+    uint16_t touch_value;
    
     // Infinite loop
     while(1) {
@@ -98,46 +100,38 @@ void app_main(void)
         strftime(strftime_buf, sizeof(strftime_buf), "%Y-%m-%dT%H:%M:%S%z", &timeinfo);
 
         // Read touch value
-        uint16_t touch_value;
         esp_err_t ret = touch_pad_read(TOUCH_PAD_NUM, &touch_value);
 
         // Check if key is present
         if (ret == ESP_OK) {
-            // touch_value is below the threshold (true)
-            if (touch_value < TOUCH_THRESHOLD) {
-                // Reset time above threshold
-                time_above_threshold_ms = 0;
+            // Determine whether touch_value is above or below threshold
+            bool momentary_key_state = (touch_value < TOUCH_THRESHOLD);
+            
+            // If bellow_threshold is not the same as key_state, aka the key state has changed
+            if (momentary_key_state != key_state) {
+                // Update time_above_threshold_ms or time_below_threshold_ms accordingly
+                uint32_t* time_ptr = momentary_key_state ? &time_below_threshold_ms : &time_above_threshold_ms;
+                *time_ptr += 100;
 
-                // Add 100ms to the time below threshold
-                time_below_threshold_ms += 100;
-    
                 // Check if the time threshold has been reached
-                if (time_below_threshold_ms >= TIME_THRESHOLD * 1000) {
-                    // Key is present
-                    if (!key_present) {
-                        key_present = true;
-                        // Print current time | touch value | key present bool
-                        ESP_LOGI(TAG, "%s | Touch value: %d | Key: %s", strftime_buf, touch_value, key_present ? "present" : "not present");
-                    }
-                }
-            // touch_value is above threshold (false)
+                if (*time_ptr >= TIME_THRESHOLD * 1000) {
+                    // Change key_state to the new state
+                    key_state = momentary_key_state;
+                    // Print current time | key state
+                    ESP_LOGI(TAG, "%s | Key: %s", strftime_buf, key_state ? "present" : "not present");
+                    // Reset time_above_threshold_ms and time_below_threshold_ms
+                    time_above_threshold_ms = 0;
+                    time_below_threshold_ms = 0;
             } else {
-                // Reset time below threshold
+                // Reset time_above_threshold_ms and time_below_threshold_ms
+                time_above_threshold_ms = 0;
                 time_below_threshold_ms = 0;
-
-                // Add 100ms to the time above threshold
-                time_above_threshold_ms += 100;
-
-                // Check if the time threshold has been reached
-                if (time_above_threshold_ms >= TIME_THRESHOLD * 1000) {
-                    // Key is not present
-                    if (key_present) {
-                        key_present = false;
-                        // Print current time | touch value | key present bool
-                        ESP_LOGI(TAG, "%s | Touch value: %d | Key: %s", strftime_buf, touch_value, key_present ? "present" : "not present");
-                    }
-                }
             }
+
+            // Debug print
+            ESP_LOGI("debug", "%s | Touch value: %d | Key: %s", strftime_buf, touch_value, key_state ? "present" : "not present");
+            }
+
         } else {
             ESP_LOGE(TAG, "Error reading touch sensor of %d: %s\n", TOUCH_PAD_NUM, esp_err_to_name(ret));
         }
