@@ -66,6 +66,10 @@ void time_sync_notification_cb(struct timeval *tv)
 #define LED_STRIP_LED_NUMBERS 1
 // 10MHz resolution, 1 tick = 0.1us (led strip needs a high resolution)
 #define LED_STRIP_RMT_RES_HZ  (10 * 1000 * 1000)
+
+// Time duration of the visibility LED
+#define VISIBILITY_LED_DURATION_MS 1000
+
 static void blink_led(led_strip_handle_t led_strip, uint8_t red, uint8_t green, uint8_t blue);
 
 static void visibility_led(led_strip_handle_t led_strip, bool visibility_led);
@@ -130,6 +134,8 @@ void app_main(void)
     uint32_t time_above_threshold_ms = 0;
     // current touch value
     uint16_t touch_value;
+    // time the visibility LED was turned on
+    time_t visibility_led_on_time = 0; 
    
     // EVENT LOOP
     while(1) {
@@ -168,6 +174,8 @@ void app_main(void)
                         blink_led(led_strip, 255, 0, 0);
                         // Turn on visibility LED
                         visibility_led(led_strip, true);
+                        // save time visibility LED was turned on
+                        visibility_led_on_time = now;
                     }
 
                     // Log current time | key state
@@ -183,6 +191,12 @@ void app_main(void)
             }
         } else {
             ESP_LOGE(TAG, "Error reading touch sensor of %d: %s\n", TOUCH_PAD_NUM, esp_err_to_name(ret));
+        }
+
+        // Check if visibility LED should be turned off
+        if ((now - visibility_led_on_time) >= VISIBILITY_LED_DURATION_MS) {
+            // Turn off visibility LED
+            visibility_led(led_strip, false);
         }
    
         // Sleep for 100ms
