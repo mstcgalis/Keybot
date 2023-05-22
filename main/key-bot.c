@@ -16,24 +16,25 @@
 #include "esp_pm.h"
 #include "driver/gpio.h"
 #include "driver/touch_pad.h"
+#include "led_strip.h"
 
 static const char *TAG = "key-bot";
 
-// GPIO number of the touch pad
+//// CAPACITIVE SENSOR
+// GPIO number of the capacitive sensor
 #define TOUCH_PAD_NUM 0
 // Touch threshold
 #define TOUCH_THRESHOLD 410
 // Set the time threshold in seconds (how long has the change in touch_value be to change the key_state bool)
-#define TIME_THRESHOLD 5
+#define TIME_THRESHOLD 1
 
+//// WIFI
 #ifndef INET6_ADDRSTRLEN
 #define INET6_ADDRSTRLEN 48
 #endif
-
 /*set the ssid and password via "idf.py menuconfig"*/
 #define DEFAULT_SSID CONFIG_EXAMPLE_WIFI_SSID
 #define DEFAULT_PWD CONFIG_EXAMPLE_WIFI_PASSWORD
-
 #define DEFAULT_LISTEN_INTERVAL CONFIG_EXAMPLE_WIFI_LISTEN_INTERVAL
 #define DEFAULT_BEACON_TIMEOUT  CONFIG_EXAMPLE_WIFI_BEACON_TIMEOUT
 
@@ -44,20 +45,35 @@ static const char *TAG = "key-bot";
 #elif CONFIG_EXAMPLE_POWER_SAVE_NONE
 #define DEFAULT_PS_MODE WIFI_PS_NONE
 #else
+
 #define DEFAULT_PS_MODE WIFI_PS_NONE
 #endif /*CONFIG_POWER_SAVE_MODEM*/
 
-static void obtain_time(void);
 static void wifi_power_save(void);
+
+//// TIME
+static void obtain_time(void);
 
 void time_sync_notification_cb(struct timeval *tv)
 {
     ESP_LOGI(TAG, "Notification of a time synchronization event");
 }
 
+//// LED
+// GPIO assignment for the LED
+#define LED_STRIP_BLINK_GPIO  25
+// LED numbers in the strip
+#define LED_STRIP_LED_NUMBERS 1
+// 10MHz resolution, 1 tick = 0.1us (led strip needs a high resolution)
+#define LED_STRIP_RMT_RES_HZ  (10 * 1000 * 1000)
+static void blink_led(led_strip_handle_t led_strip, uint8_t red, uint8_t green, uint8_t blue);
+
+static void visibility_led(led_strip_handle_t led_strip, bool visibility_led);
+
+//// MAIN
 void app_main(void)
 {
-    // Initialize NVS
+    //// TIME SETUP
     time_t now;
     struct tm timeinfo;
     time(&now);
@@ -70,30 +86,52 @@ void app_main(void)
         time(&now);
     }
     char strftime_buf[64];
-
     // Set timezone to Central European Summer Time (CEST)
     setenv("TZ", "CET-1CEST,M3.5.0,M10.5.0/3", 1);
     tzset();
 
-    // Initialize touch pad
+    //// CAPACITIVE SENSOR SETUP
     touch_pad_init();
     touch_pad_config(TOUCH_PAD_NUM, 0);
-    // Set up GPIO
+    // Set up GPIO for the capacitive sensor
     esp_rom_gpio_pad_select_gpio(TOUCH_PAD_NUM);
     gpio_set_direction(TOUCH_PAD_NUM, GPIO_MODE_INPUT);
 
-    // Variable storing the key state (key is present on the nail)
+    //// LED SETUP
+    // LED Strip object handle
+    led_strip_handle_t led_strip;
+
+    // LED strip general initialization, according to your led board design
+    led_strip_config_t strip_config = {
+        .strip_gpio_num = LED_STRIP_BLINK_GPIO,   // The GPIO that connected to the LED strip's data line
+        .max_leds = LED_STRIP_LED_NUMBERS,        // The number of LEDs in the strip,
+        .led_pixel_format = LED_PIXEL_FORMAT_GRB, // Pixel format of your LED strip
+        .led_model = LED_MODEL_WS2812,            // LED strip model
+        .flags.invert_out = false,                // whether to invert the output signal
+    };
+
+    // LED strip backend configuration: RMT
+    led_strip_rmt_config_t rmt_config = {
+        .clk_src = RMT_CLK_SRC_DEFAULT,        // different clock source can lead to different power consumption
+        .resolution_hz = LED_STRIP_RMT_RES_HZ, // RMT counter clock frequency
+        .flags.with_dma = false,               // DMA feature is available on ESP target like ESP32-S3
+    };
+    ESP_ERROR_CHECK(led_strip_new_rmt_device(&strip_config, &rmt_config, &led_strip));
+    ESP_LOGI(TAG, "Created LED strip object with RMT backend");
+
+    //// VARIABLES
+    // key is logged as present on the sensor nail
     bool key_state = false;
-    // Variable storing the MOEMENTARY key state (key is present on the nail)
+    // OEMENTARY key state key is present on the nail (right now)
     bool momentary_key_state = false;
-    // Variable storing the time below the threshold in milliseconds (true)
+    // time the sensor spent below the threshold in milliseconds (momentary_key_state = true)
     uint32_t time_below_threshold_ms = 0;
-    // Variable storing the time above the threshold in milliseconds (false)
+    // time the sensor spent above the threshold in milliseconds (momentary_key_state = false)
     uint32_t time_above_threshold_ms = 0;
-    // Variable storing the current touch value
+    // current touch value
     uint16_t touch_value;
    
-    // Infinite loop
+    // EVENT LOOP
     while(1) {
         // Get current time
         time(&now);
@@ -119,7 +157,20 @@ void app_main(void)
                 if (*time_ptr >= TIME_THRESHOLD * 1000) {
                     // Change key_state to the new state
                     key_state = momentary_key_state;
-                    // Print current time | key state
+                    
+                    // Notify users of key state change
+                    if (key_state) {
+                        // Green LED feedback
+                        blink_led(led_strip, 0, 255, 0);
+                        // TODO: Send notification to Discord
+                    } else {
+                        // Red LED feedback
+                        blink_led(led_strip, 255, 0, 0);
+                        // Turn on visibility LED
+                        visibility_led(led_strip, true);
+                    }
+
+                    // Log current time | key state
                     ESP_LOGI(TAG, "%s | Key: %s", strftime_buf, key_state ? "present" : "not present");
                     // Reset time_above_threshold_ms and time_below_threshold_ms
                     time_above_threshold_ms = 0;
@@ -139,6 +190,7 @@ void app_main(void)
         }
 }
 
+// TIME
 static void obtain_time(void)
 {
     // Initialize NVS
@@ -185,6 +237,7 @@ static void obtain_time(void)
     esp_netif_sntp_deinit();
 }
 
+// EVENT HANDLER (wifi)
 static void event_handler(void* arg, esp_event_base_t event_base,
                                 int32_t event_id, void* event_data)
 {
@@ -226,4 +279,37 @@ static void wifi_power_save(void)
 
     ESP_LOGI(TAG, "esp_wifi_set_ps().");
     esp_wifi_set_ps(DEFAULT_PS_MODE);
+}
+
+// LED
+// Blink LED strip 2 times at specified RGB color, used for key state change and knock command
+static void blink_led(led_strip_handle_t led_strip, uint8_t red, uint8_t green, uint8_t blue) {
+    ESP_LOGI(TAG, "Blinking LED 2 times, color: %u %u %u", red, green, blue);
+    for (int i = 0; i < 2; i++) {
+        // Set the LED pixel using the specified RGB values
+        ESP_ERROR_CHECK(led_strip_set_pixel(led_strip, 0, green, red, blue));
+        // Refresh the strip to send data
+        ESP_ERROR_CHECK(led_strip_refresh(led_strip));
+        // Wait for 50ms
+        vTaskDelay(pdMS_TO_TICKS(50));
+        /* Set all LED off to clear all pixels */
+        ESP_ERROR_CHECK(led_strip_clear(led_strip));
+        // Wait for 500ms
+        vTaskDelay(pdMS_TO_TICKS(150));
+    };
+}
+
+// Toggle visibility (white) LED
+static void visibility_led(led_strip_handle_t led_strip, bool visibility_led) {
+    if (visibility_led) {
+        ESP_LOGI(TAG, "Visibility LED turned ON");
+        // Set the LED pixel using the specified RGB values
+        ESP_ERROR_CHECK(led_strip_set_pixel(led_strip, 0, 255, 255, 255));
+        // Refresh the strip to send data
+        ESP_ERROR_CHECK(led_strip_refresh(led_strip));
+    } else {
+        ESP_LOGI(TAG, "Visibility LED turned OFF");
+        /* Set all LED off to clear all pixels */
+        ESP_ERROR_CHECK(led_strip_clear(led_strip));
+    };
 }
