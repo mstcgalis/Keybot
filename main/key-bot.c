@@ -68,11 +68,13 @@ void time_sync_notification_cb(struct timeval *tv)
 #define LED_STRIP_RMT_RES_HZ  (10 * 1000 * 1000)
 
 // Time duration of the visibility LED
-#define VISIBILITY_LED_DURATION_MS 1000
+#define VISIBILITY_LED_DURATION_S 15
+// Visibility LED state bool
+bool visibility_led_state = false;
 
 static void blink_led(led_strip_handle_t led_strip, uint8_t red, uint8_t green, uint8_t blue);
 
-static void visibility_led(led_strip_handle_t led_strip, bool visibility_led);
+static bool visibility_led(led_strip_handle_t led_strip, bool visibility_led);
 
 //// MAIN
 void app_main(void)
@@ -166,14 +168,18 @@ void app_main(void)
                     
                     // Notify users of key state change
                     if (key_state) {
+                        // Turn off visibility LED
+                        visibility_led_state = visibility_led(led_strip, false);
                         // Green LED feedback
                         blink_led(led_strip, 0, 255, 0);
                         // TODO: Send notification to Discord
                     } else {
+                        // Turn off visibility LED
+                        visibility_led_state = visibility_led(led_strip, false);
                         // Red LED feedback
                         blink_led(led_strip, 255, 0, 0);
                         // Turn on visibility LED
-                        visibility_led(led_strip, true);
+                        visibility_led_state = visibility_led(led_strip, true);
                         // save time visibility LED was turned on
                         visibility_led_on_time = now;
                     }
@@ -194,9 +200,9 @@ void app_main(void)
         }
 
         // Check if visibility LED should be turned off
-        if ((now - visibility_led_on_time) >= VISIBILITY_LED_DURATION_MS) {
+        if (visibility_led_state && (now - visibility_led_on_time) >= VISIBILITY_LED_DURATION_S) {
             // Turn off visibility LED
-            visibility_led(led_strip, false);
+            visibility_led_state = visibility_led(led_strip, false);
         }
    
         // Sleep for 100ms
@@ -238,7 +244,7 @@ static void obtain_time(void)
     esp_netif_sntp_init(&config);
 
     // wait for time to be set
-    time_t now = 0;
+    time_t now = 1000000000000;
     struct tm timeinfo = { 0 };
     int retry = 0;
     const int retry_count = 15;
@@ -314,7 +320,7 @@ static void blink_led(led_strip_handle_t led_strip, uint8_t red, uint8_t green, 
 }
 
 // Toggle visibility (white) LED
-static void visibility_led(led_strip_handle_t led_strip, bool visibility_led) {
+static bool visibility_led(led_strip_handle_t led_strip, bool visibility_led) {
     if (visibility_led) {
         ESP_LOGI(TAG, "Visibility LED turned ON");
         // Set the LED pixel using the specified RGB values
@@ -326,4 +332,5 @@ static void visibility_led(led_strip_handle_t led_strip, bool visibility_led) {
         /* Set all LED off to clear all pixels */
         ESP_ERROR_CHECK(led_strip_clear(led_strip));
     };
+    return visibility_led;
 }
