@@ -353,11 +353,6 @@ static bool visibility_led(led_strip_t *strip, bool visibility_led) {
         ESP_LOGI(TAG, "Visibility LED turning ON");
         // Clear all pixels
         ESP_ERROR_CHECK(strip->clear(strip, 50));
-        // // Gradually increase brightness and whiteness over 10 seconds
-        // for (int i = 0; i <= 255; i++) {
-        //     ESP_ERROR_CHECK(strip->set_pixel(strip, 0, i, i, i));
-        //     ESP_ERROR_CHECK(strip->refresh(strip, 39)); // 10000ms / 255 steps = 39.22ms per step
-        // }
         // Set the LED pixel using the white color
         ESP_ERROR_CHECK(strip->set_pixel(strip, 0, 255, 255, 255));
         // Flush RGB values to LEDs
