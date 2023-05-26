@@ -8,6 +8,12 @@
 
 ## Software
 
+### How to setup
+1. Create a Discord bot and get the token, paste it into the menuconfig
+2. Invite the bot to your server
+3. Get the channel ID of the channel you want to use for communication with the bot ([guide](https://support.discord.com/hc/en-us/articles/206346498-Where-can-I-find-my-User-Server-Message-ID-))
+4. 
+
 ## Hardware
 
 - ESP32 board (i'm using the ESP32-DevKitC V4 with the ESP-WROOM-32E module, others may work)

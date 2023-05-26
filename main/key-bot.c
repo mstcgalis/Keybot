@@ -365,3 +365,5 @@ static bool visibility_led(led_strip_t *strip, bool visibility_led) {
     return visibility_led;
 }
 
+//// DISCORD
+// Send a state change notification to Discord
