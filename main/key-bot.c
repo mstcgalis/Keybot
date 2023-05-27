@@ -13,6 +13,7 @@
 #include "esp_sntp.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/event_groups.h"
+#include "freertos/task.h"
 #include "esp_wifi.h"
 #include "esp_pm.h"
 #include "driver/gpio.h"
@@ -67,7 +68,7 @@ static void event_handler(void* arg, esp_event_base_t event_base, int32_t event_
 
 static void wifi_power_save(void);
 
-// //// TIME
+//// TIME
 static void obtain_time(void);
 
 static void initialize_sntp(void);
@@ -76,6 +77,13 @@ void time_sync_notification_cb(struct timeval *tv)
 {
     ESP_LOGI(TAG, "Notification of a time synchronization event");
 }
+
+//// SOLENOID
+#define SOLENOID_GPIO 12
+#define SOLENOID_DELAY_MS 500
+#define NUM_KNOCKS 2
+
+static void solenoid_knock(void);
 
 //// LED
 // GPIO assignment for the LED
@@ -130,6 +138,11 @@ void app_main(void)
 
     ESP_ERROR_CHECK(rmt_config(&config));
     ESP_ERROR_CHECK(rmt_driver_install(config.channel, 0, 0));
+
+    //// SOLENOID SETUP
+    // Set up GPIO for the solenoid
+    gpio_pad_select_gpio(SOLENOID_GPIO);
+    gpio_set_direction(SOLENOID_GPIO, GPIO_MODE_OUTPUT);
 
     // install ws2812 driver
     led_strip_config_t strip_config = LED_STRIP_DEFAULT_CONFIG(LED_STRIP_LED_NUMBERS, (led_strip_dev_t)config.channel);
@@ -376,7 +389,7 @@ static void bot_event_handler(void* handler_arg, esp_event_base_t base, int32_t 
     event_handler_args_t* args = (event_handler_args_t*)handler_arg;
     
     led_strip_t *strip = args->strip;
-    bool* key_state = args->key_state;
+    // bool* key_state = args->key_state;
 
     switch(event_id) {
         case DISCORD_EVENT_CONNECTED: {
@@ -441,17 +454,17 @@ static void bot_event_handler(void* handler_arg, esp_event_base_t base, int32_t 
                         int time_knocked_s = 0;
                         // blink LED strip blue till the KNOKING_TIME_S is reached
                         while (time_knocked_s < KNOCKING_TIME_S)
-                        {
+                        {   
                             blink_led(strip, 0, 0, 255); // takes 0.35 seconds
-                            // TODO: Solenoid knock function call 
-                            vTaskDelay(pdMS_TO_TICKS(1750));
-                            time_knocked_s += 2;
-                        }
+                            vTaskDelay(pdMS_TO_TICKS(250));
+                            solenoid_knock();
+                            time_knocked_s += 3;
+                            vTaskDelay(pdMS_TO_TICKS(200));
 
-                        // bool final_key_state = *key_state;
+                        }
                         
                         char knocking_end_content[150];
-                        snprintf(knocking_end_content, sizeof(knocking_end_content), "🫡 knocked for %d seconds, if someone hangs the key, I'll let you know <@%s>", KNOCKING_TIME_S, msg->user_id);
+                        snprintf(knocking_end_content, sizeof(knocking_end_content), "🫡 knocked for %d seconds, when the key is hung, I'll let you know", KNOCKING_TIME_S);
 
                         discord_message_t knocking_end = {
                             .content = knocking_end_content,
@@ -460,7 +473,6 @@ static void bot_event_handler(void* handler_arg, esp_event_base_t base, int32_t 
 
                         discord_message_t* sent_msg_knocking_end = NULL;
                         esp_err_t err_knocking_end = discord_message_send(bot, &knocking_end, &sent_msg_knocking_end);
-
 
                         if(err_knocking == ESP_OK && err_knocking_end == ESP_OK) {
                             ESP_LOGI(TAG, "KNOCKING messages successfully sent");
@@ -577,4 +589,20 @@ static bool visibility_led(led_strip_t *strip, bool visibility_led) {
         ESP_ERROR_CHECK(strip->clear(strip, 50));
     };
     return visibility_led;
+}
+
+//// SOLENOID
+void solenoid_knock()
+{
+    for (int i = 0; i < NUM_KNOCKS; i++) {
+        // Activate solenoid pull
+        gpio_set_level(SOLENOID_GPIO, 1);
+        vTaskDelay(SOLENOID_DELAY_MS / portTICK_PERIOD_MS);
+
+        // Activate solenoid push
+        gpio_set_level(SOLENOID_GPIO, 0);
+        vTaskDelay(SOLENOID_DELAY_MS / portTICK_PERIOD_MS);
+    }
+
+    ESP_LOGI(TAG, "Solenoid knock complete");
 }
