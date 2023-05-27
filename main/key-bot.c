@@ -30,16 +30,12 @@
 static const char *TAG = "key-bot";
 
 //// CAPACITIVE SENSOR
-// GPIO number of the capacitive sensor
-#define TOUCH_PAD_NUM 0
-// Touch threshold
-#define TOUCH_THRESHOLD 410
-// Set the time threshold in seconds (how long has the change in touch_value be to change the key_state bool)
-#define TIME_THRESHOLD 1
+#define TOUCH_PAD_NUM CONFIG_TOUCH_PAD_NUM
+#define TOUCH_THRESHOLD CONFIG_TOUCH_PAD_THRESHOLD
+#define TIME_THRESHOLD CONFIG_TOUCH_PAD_TIME_PERIOD
 
 //// DISCORD
-#define DISCORD_CHANNEL_ID "1110610679045562449"
-#define KNOCKING_TIME_S 10
+#define DISCORD_CHANNEL_ID CONFIG_DISCORD_CHANNEL_ID
 
 static discord_handle_t bot;
 
@@ -79,24 +75,20 @@ void time_sync_notification_cb(struct timeval *tv)
 }
 
 //// SOLENOID
-#define SOLENOID_GPIO 12
-#define SOLENOID_DELAY_MS 500
-#define NUM_KNOCKS 2
+#define SOLENOID_GPIO CONFIG_SOLENOID_GPIO
+#define SOLENOID_DELAY_MS CONFIG_SOLENOID_DELAY_MS
+#define NUM_KNOCKS CONFIG_SOLENOID_KNOCK_COUNT
+#define KNOCKING_TIME_S CONFIG_SOLENOID_KNOCK_TIME_S
 
 static void solenoid_knock(void);
 
 //// LED
-// GPIO assignment for the LED
-#define LED_STRIP_BLINK_GPIO  25
-// LED numbers in the strip
-#define LED_STRIP_LED_NUMBERS 1
-// 10MHz resolution, 1 tick = 0.1us (led strip needs a high resolution)
-#define LED_STRIP_RMT_RES_HZ  (10 * 1000 * 1000)
-// RMT channel for LED strip
+#define LED_STRIP_BLINK_GPIO CONFIG_LED_GPIO
+#define LED_STRIP_LED_NUMBERS CONFIG_LED_COUNT
+#define LED_STRIP_RMT_RES_HZ CONFIG_LED_RMT_RESOLUTION
 #define RMT_TX_CHANNEL RMT_CHANNEL_0
+#define VISIBILITY_LED_DURATION_S CONFIG_LED_VISIBILITY_TIME_S
 
-// Time duration of the visibility LED
-#define VISIBILITY_LED_DURATION_S 15
 // Visibility LED state bool
 bool visibility_led_state = false;
 

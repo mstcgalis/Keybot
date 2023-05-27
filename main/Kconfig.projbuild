@@ -117,3 +117,93 @@ menu "WIFI Configuration"
         default 13 if EXAMPLE_MIN_CPU_FREQ_13M
 
 endmenu
+
+menu "Capacitive Sensor"
+
+    config TOUCH_PAD_NUM
+        int "Touch Pad Number"
+        default 4
+        help
+            GPIO pin number used for capacitive sensor.
+    
+    config TOUCH_PAD_THRESHOLD
+        int "Touch Pad Threshold"
+        default 410
+        help
+            Touch pad threshold used for capacitive sensor.
+    
+    config TOUCH_PAD_TIME_PERIOD
+        int "Touch Pad Time Period (s)"
+        default 1
+        help
+            Touch pad time period (in seconds) for which the sensor has to be engaged to change the key state.
+
+endmenu
+
+menu "Solenoid Knocking"
+
+    config SOLENOID_GPIO
+        int "Solenoid GPIO"
+        range 0 48
+        default 12
+        help
+            GPIO pin number used for solenoid knocking.
+
+    config SOLENOID_DELAY_MS
+        int "Solenoid Delay (ms)"
+        default 500
+        help
+            Delay (in milliseconds) between two knocks.
+    
+    config SOLENOID_KNOCK_COUNT
+        int "Solenoid Knocks Count"
+        default 2
+        help
+            Number of time the solenoid will engaged in a single "knock".
+    
+    config SOLENOID_KNOCK_TIME_S
+        int "Solenoid Knock Time (s)"
+        default 10
+        help
+            Time (in seconds) for which "knocks" will be repreated on a sigle command.
+
+endmenu
+
+menu "LED Strip"
+    
+    config LED_GPIO
+        int "LED GPIO"
+        range 0 48
+        default 25
+        help
+            GPIO pin number used for LED strip.
+
+    config LED_COUNT
+        int "LED Count"
+        default 1
+        help
+            Number of LEDs in the strip.
+
+    config LED_RMT_RES_HZ
+        int "LED RMT Resolution (Hz)"
+        default 10000000
+        help
+            RMT resolution (in Hz) for LED strip.
+    
+    config LED_VISIBILITY_TIME_S
+        int "LED Visibility Time (s)"
+        default 10
+        help
+            Time (in seconds) for which the visiblity (white) LED will stay on.
+
+endmenu
+
+menu "Discord"
+
+    config DISCORD_CHANNEL_ID
+        string "Discord Channel ID"
+        default 0
+        help
+            Discord channel ID in which the bot will read and send messages.
+
+endmenu
