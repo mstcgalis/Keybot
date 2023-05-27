@@ -21,6 +21,11 @@
 #include "sdkconfig.h"
 #include "driver/rmt.h"
 
+#include "discord.h"
+#include "discord/session.h"
+#include "discord/message.h"
+#include "estr.h"
+
 static const char *TAG = "key-bot";
 
 //// CAPACITIVE SENSOR
@@ -31,7 +36,17 @@ static const char *TAG = "key-bot";
 // Set the time threshold in seconds (how long has the change in touch_value be to change the key_state bool)
 #define TIME_THRESHOLD 1
 
-// //// WIFI
+//// DISCORD
+#define DISCORD_CHANNEL_ID "1110610679045562449"
+#define KNOCKING_TIME_S 10
+
+static discord_handle_t bot;
+
+static void bot_event_handler(void* handler_arg, esp_event_base_t base, int32_t event_id, void* event_data);
+
+static void bot_notifcation_random_message(bool key_state);
+
+//// WIFI
 /*set the ssid and password via "idf.py menuconfig"*/
 #define DEFAULT_SSID CONFIG_EXAMPLE_WIFI_SSID
 #define DEFAULT_PWD CONFIG_EXAMPLE_WIFI_PASSWORD
@@ -100,6 +115,15 @@ void app_main(void)
     // Set timezone to Central European Summer Time (CEST)
     setenv("TZ", "CET-1CEST,M3.5.0,M10.5.0/3", 1);
     tzset();
+
+    //// DISCORD SETUP
+    discord_config_t cfg = {
+        .intents = DISCORD_INTENT_GUILD_MESSAGES | DISCORD_INTENT_MESSAGE_CONTENT
+    };
+
+    bot = discord_create(&cfg);
+    ESP_ERROR_CHECK(discord_register_events(bot, DISCORD_EVENT_ANY, bot_event_handler, NULL));
+    ESP_ERROR_CHECK(discord_login(bot));
 
     //// CAPACITIVE SENSOR SETUP
     touch_pad_init();
@@ -174,7 +198,8 @@ void app_main(void)
                         vTaskDelay(pdMS_TO_TICKS(100));
                         // Green LED feedback
                         blink_led(strip, 0, 255, 0);
-                        // TODO: Send notification to Discord
+                        // Send notification to Discord
+                        bot_notifcation_random_message(key_state);
                     } else {
                         // Turn off visibility LED
                         visibility_led_state = visibility_led(strip, false);
@@ -188,7 +213,8 @@ void app_main(void)
                         visibility_led_state = visibility_led(strip, true);
                         // save time visibility LED was turned on
                         visibility_led_on_time = now;
-                        // TODO: Send notification to Discord
+                        // Send notification to Discord
+                        bot_notifcation_random_message(key_state);
                     }
 
                     // Log current time | key state
@@ -327,6 +353,181 @@ static void wifi_power_save(void)
     esp_wifi_set_ps(DEFAULT_PS_MODE);
 }
 
+//// DISCORD
+static void bot_event_handler(void* handler_arg, esp_event_base_t base, int32_t event_id, void* event_data) {
+    discord_event_data_t* data = (discord_event_data_t*) event_data;
+
+    switch(event_id) {
+        case DISCORD_EVENT_CONNECTED: {
+                discord_session_t* session = (discord_session_t*) data->ptr;
+
+                ESP_LOGI(TAG, "Bot %s#%s connected",
+                    session->user->username,
+                    session->user->discriminator,
+                    session->user->id
+                );
+
+                // send message announcing that the bot is connected
+                // define variable to store the message content
+                char* connected_content = estr_cat("📡 <@", session->user->id, "> is connected");
+
+                // Create a discord_message_t struct with the message content and the channel ID
+                discord_message_t connected = {
+                    .content = connected_content,
+                    .channel_id = DISCORD_CHANNEL_ID
+                };
+
+                discord_message_t* sent_msg = NULL;
+                esp_err_t err_connected = discord_message_send(bot, &connected, &sent_msg);
+                free(connected_content);
+                
+                // log
+                if(err_connected == ESP_OK) {
+                    ESP_LOGI(TAG, "CONNECTED message successfully sent");
+                } else {
+                    ESP_LOGE(TAG, "Failed to send CONNECTED message");
+                }
+            }
+            break;
+        
+        // knock command case
+        case DISCORD_EVENT_MESSAGE_RECEIVED: {
+                discord_message_t* msg = (discord_message_t*) data->ptr;
+
+                // Check if the server ID of the message is of the intended channel 
+                if(msg->channel_id && strcmp(msg->channel_id, DISCORD_CHANNEL_ID) == 0 && msg->content) {
+                    if(strstr(msg->content, "knock") || strstr(msg->content, "klop") || strstr(msg->content, "<@1110502089848782858>")) {
+                        ESP_LOGI(TAG, "New message (dm=%s, autor=%s#%s, bot=%s, channel=%s, guild=%s, content=%s)",
+                            ! msg->guild_id ? "true" : "false",
+                            msg->author->username,
+                            msg->author->discriminator,
+                            msg->author->bot ? "true" : "false",
+                            msg->channel_id,
+                            msg->guild_id ? msg->guild_id : "NULL",
+                            msg->content
+                        );
+
+                        char* knocking_content = estr_cat("✊ knocking...");
+
+                        discord_message_t knocking = {
+                            .content = knocking_content,
+                            .channel_id = msg->channel_id
+                        };
+
+                        discord_message_t* sent_msg = NULL;
+                        esp_err_t err_knocking = discord_message_send(bot, &knocking, &sent_msg);
+                        free(knocking_content);
+
+                        int time_knocked_s = 0;
+                        // blink LED strip blue till the KNOKING_TIME_S is reached
+                        while (time_knocked < KNOCKING_TIME_S)
+                        {
+                            blink_led(strip, 0, 0, 255); // takes 0.35 seconds
+                            // TODO: Solenoid knock function call 
+                            vTaskDelay(pdMS_TO_TICKS(1750));
+                            time_knocked += 2;
+                        }
+
+                        // wait for 10 seconds
+                        vTaskDelay(pdMS_TO_TICKS((KNOCKING_TIME_S * 1000)));
+
+                        
+                        char knocking_end_content[32];
+                        snprintf(knocking_end_content, sizeof(knocking_end_content), "🫡 knocked for: %d seconds", KNOCKING_TIME_S);
+
+                        discord_message_t knocking_end = {
+                            .content = knocking_end_content,
+                            .channel_id = msg->channel_id
+                        };
+
+                        discord_message_t* sent_msg_knocking_end = NULL;
+                        esp_err_t err_knocking_end = discord_message_send(bot, &knocking_end, &sent_msg_knocking_end);
+
+
+                        if(err_knocking == ESP_OK && err_knocking_end == ESP_OK) {
+                            ESP_LOGI(TAG, "KNOCKING messages successfully sent");
+
+                            if(sent_msg) { // null check because message can be sent but not returned
+                                ESP_LOGI(TAG, "Response message got ID #%s", sent_msg->id);
+                                discord_message_free(sent_msg);
+                            }
+                        } else {
+                            ESP_LOGE(TAG, "Fail to send KNOCKING messages");
+                        }
+                    }
+                }
+            break;
+        }
+        
+        case DISCORD_EVENT_DISCONNECTED: {
+            ESP_LOGW(TAG, "Bot logged out");
+            break;
+        }
+    }
+}
+
+// funcion bot_send_random_message that sends a random message from an array of strings, depending on the key_state variable (true : positive_messages, false : negative_messages)
+static void bot_notifcation_random_message(bool key_state) {
+    // Get the current state of the bot
+    discord_gateway_state_t state;
+    discord_get_state(bot, &state);
+
+    // Check if the bot is connected
+    if(state != DISCORD_STATE_CONNECTED) {
+        ESP_LOGW(TAG, "Not connected with Discord");
+        goto _return;
+    }
+    
+    // Define arrays of positive and negative messages
+    char* true_messages[] = {"jsem na ataku 🙋", "Jsme tu:)", "Už jo.", "mam klice", "už jo🌼", "ahoj, já jsem tu!)", "jsem tu kdyztak ✌️", "Už by tam měl být @someone.", "jojo 🙌", "Ano ✌️", "jsme tu 🌱", "už som tu" };
+    char* false_messages[] = {"uz ne 😦", "ne bohuzel 😬", "akorat odchazime", "dnes už asi ne ))", "ted jsem odesel", "Před chvíli jsme odešli:/", "asi ne", "práve som odišiel"};
+
+    // define variable to store the message content
+    char* notification_content;
+
+    // Get the length of each array
+    int num_true_messages = sizeof(true_messages) / sizeof(true_messages[0]);
+    int num_false_messages = sizeof(false_messages) / sizeof(false_messages[0]);
+
+    // Seed the random number generator
+    srand(time(NULL));
+
+    // Choose a random message based on the key_state variable
+    if (key_state) {
+        int index = rand() % num_true_messages;
+        notification_content = estr_cat("🟢 ", true_messages[index]);
+    } else {
+        int index = rand() % num_false_messages;
+        notification_content = estr_cat("🔴 ", false_messages[index]);
+    }
+
+    // Create a discord_message_t struct with the message content and the channel ID
+    discord_message_t notification = {
+        .content = notification_content,
+        .channel_id = DISCORD_CHANNEL_ID
+    };
+
+    discord_message_t* sent_msg = NULL;
+    esp_err_t err = discord_message_send(bot, &notification, &sent_msg);
+    free(notification_content);
+
+
+    // log
+    if(err == ESP_OK) {
+        ESP_LOGI(TAG, "Notifcation message successfully sent");
+
+        if(sent_msg) { // null check because message can be sent but not returned
+            ESP_LOGI(TAG, "Notification message got ID #%s", sent_msg->id);
+            discord_message_free(sent_msg);
+        }
+    } else {
+        ESP_LOGE(TAG, "Failed to send notification message");
+    }
+
+    _return:
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
+}
+
 //// LED
 // Blink LED strip 2 times at specified RGB color, used for key state change and knock command
 static void blink_led(led_strip_t *strip, uint8_t red, uint8_t green, uint8_t blue) {
@@ -364,6 +565,3 @@ static bool visibility_led(led_strip_t *strip, bool visibility_led) {
     };
     return visibility_led;
 }
-
-//// DISCORD
-// Send a state change notification to Discord
