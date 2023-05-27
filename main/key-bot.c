@@ -116,15 +116,6 @@ void app_main(void)
     setenv("TZ", "CET-1CEST,M3.5.0,M10.5.0/3", 1);
     tzset();
 
-    //// DISCORD SETUP
-    discord_config_t cfg = {
-        .intents = DISCORD_INTENT_GUILD_MESSAGES | DISCORD_INTENT_MESSAGE_CONTENT
-    };
-
-    bot = discord_create(&cfg);
-    ESP_ERROR_CHECK(discord_register_events(bot, DISCORD_EVENT_ANY, bot_event_handler, NULL));
-    ESP_ERROR_CHECK(discord_login(bot));
-
     //// CAPACITIVE SENSOR SETUP
     touch_pad_init();
     touch_pad_config(TOUCH_PAD_NUM, 0);
@@ -162,6 +153,26 @@ void app_main(void)
 
     // time the visibility LED was turned on
     time_t visibility_led_on_time = 0; 
+
+    //// DISCORD SETUP
+    discord_config_t cfg = {
+        .intents = DISCORD_INTENT_GUILD_MESSAGES | DISCORD_INTENT_MESSAGE_CONTENT
+    };
+
+    // struct for passing arguments to the event handler
+    typedef struct {
+    led_strip_t* strip;
+    bool* key_state;
+    } event_handler_args_t;
+
+    event_handler_args_t args = {
+    .strip = strip,
+    .key_state = &key_state
+    };
+
+    bot = discord_create(&cfg);
+    ESP_ERROR_CHECK(discord_register_events(bot, DISCORD_EVENT_ANY, bot_event_handler, &args));
+    ESP_ERROR_CHECK(discord_login(bot));
    
     // EVENT LOOP
     while(1) {
@@ -357,14 +368,23 @@ static void wifi_power_save(void)
 static void bot_event_handler(void* handler_arg, esp_event_base_t base, int32_t event_id, void* event_data) {
     discord_event_data_t* data = (discord_event_data_t*) event_data;
 
+    typedef struct {
+    led_strip_t* strip;
+    bool* key_state;
+    } event_handler_args_t;
+
+    event_handler_args_t* args = (event_handler_args_t*)handler_arg;
+    
+    led_strip_t *strip = args->strip;
+    bool* key_state = args->key_state;
+
     switch(event_id) {
         case DISCORD_EVENT_CONNECTED: {
                 discord_session_t* session = (discord_session_t*) data->ptr;
 
                 ESP_LOGI(TAG, "Bot %s#%s connected",
                     session->user->username,
-                    session->user->discriminator,
-                    session->user->id
+                    session->user->discriminator
                 );
 
                 // send message announcing that the bot is connected
@@ -407,7 +427,7 @@ static void bot_event_handler(void* handler_arg, esp_event_base_t base, int32_t 
                             msg->content
                         );
 
-                        char* knocking_content = estr_cat("✊ knocking...");
+                        char* knocking_content = estr_cat("✊ knocking... if anyone's there, I'll get his attention");
 
                         discord_message_t knocking = {
                             .content = knocking_content,
@@ -420,20 +440,18 @@ static void bot_event_handler(void* handler_arg, esp_event_base_t base, int32_t 
 
                         int time_knocked_s = 0;
                         // blink LED strip blue till the KNOKING_TIME_S is reached
-                        while (time_knocked < KNOCKING_TIME_S)
+                        while (time_knocked_s < KNOCKING_TIME_S)
                         {
                             blink_led(strip, 0, 0, 255); // takes 0.35 seconds
                             // TODO: Solenoid knock function call 
                             vTaskDelay(pdMS_TO_TICKS(1750));
-                            time_knocked += 2;
+                            time_knocked_s += 2;
                         }
 
-                        // wait for 10 seconds
-                        vTaskDelay(pdMS_TO_TICKS((KNOCKING_TIME_S * 1000)));
-
+                        // bool final_key_state = *key_state;
                         
-                        char knocking_end_content[32];
-                        snprintf(knocking_end_content, sizeof(knocking_end_content), "🫡 knocked for: %d seconds", KNOCKING_TIME_S);
+                        char knocking_end_content[150];
+                        snprintf(knocking_end_content, sizeof(knocking_end_content), "🫡 knocked for %d seconds, if someone hangs the key, I'll let you know <@%s>", KNOCKING_TIME_S, msg->user_id);
 
                         discord_message_t knocking_end = {
                             .content = knocking_end_content,
@@ -446,11 +464,6 @@ static void bot_event_handler(void* handler_arg, esp_event_base_t base, int32_t 
 
                         if(err_knocking == ESP_OK && err_knocking_end == ESP_OK) {
                             ESP_LOGI(TAG, "KNOCKING messages successfully sent");
-
-                            if(sent_msg) { // null check because message can be sent but not returned
-                                ESP_LOGI(TAG, "Response message got ID #%s", sent_msg->id);
-                                discord_message_free(sent_msg);
-                            }
                         } else {
                             ESP_LOGE(TAG, "Fail to send KNOCKING messages");
                         }
