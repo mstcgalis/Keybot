@@ -23,5 +23,4 @@
 - Solenoid (i'm using...)
 - Cables
 - Micro USB power supply with cable
-- Casing (i'm using a 3D printed one from [file], but you can use anything you want)
-  - screws for the casing
+- Casing (i'm using a 3D printed one, [models](casing))
