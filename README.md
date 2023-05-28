@@ -12,7 +12,8 @@
 1. Create a Discord bot and get the token, paste it into the menuconfig
 2. Invite the bot to your server
 3. Get the channel ID of the channel you want to use for communication with the bot ([guide](https://support.discord.com/hc/en-us/articles/206346498-Where-can-I-find-my-User-Server-Message-ID-))
-4. 
+4. Paste the channel ID into the menuconfig ("Discord" menu)
+5. Setup menuconfig (LED, Solenoid, Capacitive Sensor, WiFi, Discord)
 
 ## Hardware
 
