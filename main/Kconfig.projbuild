@@ -202,7 +202,7 @@ menu "Discord"
 
     config DISCORD_CHANNEL_ID
         string "Discord Channel ID"
-        default 0
+        default "0"
         help
             Discord channel ID in which the bot will read and send messages.
 
