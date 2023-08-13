@@ -1,14 +1,12 @@
 # key-bot
 
-**key-bot** is a research interaction project, positioned to be used in a shared workspace, to which only a single, shared key is available.
+**key-bot** is a research interaction project, positioned to be used in a shared workspace, to which only a single, shared key is available. The project is built around the ESP32 microcontroller using the ESP-IDF framework.
 
 [Research paper available here](link)
 
-## Description
-
 ## Software
 
-### How to setup
+### Setup
 1. Create a Discord bot and get the token, paste it into the menuconfig
 2. Invite the bot to your server
 3. Get the channel ID of the channel you want to use for communication with the bot ([guide](https://support.discord.com/hc/en-us/articles/206346498-Where-can-I-find-my-User-Server-Message-ID-))
