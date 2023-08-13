@@ -253,7 +253,7 @@ void app_main(void)
             // Turn off visibility LED
             visibility_led_state = visibility_led(strip, false);
         }
-   
+
         // Sleep for 100ms
         vTaskDelay(100 / portTICK_PERIOD_MS);
         }

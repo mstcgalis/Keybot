@@ -1,9 +1,9 @@
 # Ignore build output
-build/
+code/build/
 
 # Ignore device specific configuration files
-sdkconfig
-sdkconfig.old
+code/sdkconfig
+code/sdkconfig.old
 
 # Ignore editor and IDE files
 .vscode/
