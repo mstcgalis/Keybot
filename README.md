@@ -4,7 +4,7 @@
 
 The project is built around the ESP32 microcontroller utilizing the ESP-IDF framework.
 
-[Research paper available here](link)
+[Research paper available here](https://danielgalis.com/posts/key-bot/)
 
 ## Software
 
