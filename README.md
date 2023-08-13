@@ -1,6 +1,8 @@
 # key-bot
 
-**key-bot** is a research interaction project, positioned to be used in a shared workspace, to which only a single, shared key is available. The project is built around the ESP32 microcontroller using the ESP-IDF framework.
+**key-bot** is a research interaction project, positioned to be used in a shared workspace where only a single, shared key is available. 
+
+The project is built around the ESP32 microcontroller utilizing the ESP-IDF framework.
 
 [Research paper available here](link)
 
@@ -15,11 +17,11 @@
 ## Hardware
 
 - ESP32 board (ESP32-DevKitC V4 with the ESP-WROOM-32E module, others may work)
-- M4 30mm screw (acting as capacitive sensor)
+- M4 30mm screw (acting as a capacitive sensor)
 - MOSFET (IRF520N)
 - Addressable RGB LED (WS2812B)
 - Solenoid (SparkFun ROB-11015)
 - Cables
 - Micro USB power supply
-- Casing (i'm using a 3D printed one from [file])
+- Casing (I'm using a 3D printed one from [file])
 - Screws for the casing
