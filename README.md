@@ -9,11 +9,11 @@ The project is built around the ESP32 microcontroller utilizing the ESP-IDF fram
 ## Software
 
 ### Setup
-1. Create a Discord bot (make sure to enable [Privileged Gateway Intents](https://github.com/abobija/esp-discord/issues/6#issuecomment-1559844490))
-2. Get the token of your bot and paste it into the menuconfig
+1. Create a Discord bot and make sure to enable [Privileged Gateway Intents](https://github.com/abobija/esp-discord/issues/6#issuecomment-1559844490))
+2. Get your bot's token and paste it into the menuconfig
 3. Invite the bot to your server
-4. Get the channel ID of the channel you want to use for communication with the bot ([guide](https://support.discord.com/hc/en-us/articles/206346498-Where-can-I-find-my-User-Server-Message-ID-)) and paste into the menuconfig
-6. Test
+4. Get the channel ID of the Discord channel you want to use for communicating with the bot ([guide](https://support.discord.com/hc/en-us/articles/206346498-Where-can-I-find-my-User-Server-Message-ID-)) and paste into the menuconfig
+5. Test
 
 ## Hardware
 
