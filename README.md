@@ -29,5 +29,5 @@ The project is built around the ESP32 microcontroller utilizing the ESP-IDF fram
 - Solenoid (SparkFun ROB-11015)
 - Cables
 - Micro USB power supply
-- Casing (I'm using a 3D printed one [/casing/key-bot_case_top.stl])
+- Casing (I'm using a 3D printed one from these [files](/casing))
 - Screws for the casing
