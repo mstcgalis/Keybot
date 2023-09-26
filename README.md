@@ -15,7 +15,7 @@ The project is built around the ESP32 microcontroller utilizing the ESP-IDF fram
 4. Get the channel ID of the Discord channel you want to use for communicating with the bot ([guide](https://support.discord.com/hc/en-us/articles/206346498-Where-can-I-find-my-User-Server-Message-ID-)) and paste into the menuconfig
 5. Test
 
-### Using key-bot
+### Using Keybot
 - When the capacitive sensor is activated for a second straight, the bot sends a messages notifying that the key has been hung.
 - When the capacitive sensor is not activated for a second straight, the bot sends a message notifying that the key is no longer hung.
 - When any user sends a message containing the string `knock` into the bot's Discord channel, the solenoid and LED are activated for a few seconds. If someone forgot to hang the key, this should alert them to do so.
