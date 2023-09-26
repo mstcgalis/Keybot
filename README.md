@@ -1,4 +1,4 @@
-# Keybot
+# Keybot 🔑
 
 **Keybot** is a research interaction project, positioned to be used in a shared workspace where only a single, shared key is available. 
 
