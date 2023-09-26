@@ -1,6 +1,6 @@
-# key-bot
+# Keybot
 
-**key-bot** is a research interaction project, positioned to be used in a shared workspace where only a single, shared key is available. 
+**Keybot** is a research interaction project, positioned to be used in a shared workspace where only a single, shared key is available. 
 
 The project is built around the ESP32 microcontroller utilizing the ESP-IDF framework.
 
