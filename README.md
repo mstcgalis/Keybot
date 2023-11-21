@@ -6,9 +6,9 @@ The project is built around the ESP32 microcontroller utilizing the ESP-IDF fram
 
 [Research paper available here](https://danielgalis.com/posts/key-bot/)
 
-## How to
+# How to
 
-### Setup
+## Software
 1. Create a Discord bot and make sure to enable [Privileged Gateway Intents](https://github.com/abobija/esp-discord/issues/6#issuecomment-1559844490)
 2. Get your bot's token and paste it into the `menuconfig`
 3. Invite the bot to your server
@@ -16,13 +16,8 @@ The project is built around the ESP32 microcontroller utilizing the ESP-IDF fram
 5. Setup WIFI SSID and Password in the `menuconfig`
 6. Buid, Flash and Monitor using [ESP-IDF](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/index.html)
 
-### Using Keybot
-- When the capacitive sensor is activated for a second straight, the bot sends a message notifying that the key has been hung.
-- When the capacitive sensor is not activated for a second straight, the bot sends a message notifying that the key is no longer hung.
-- When any user sends a message containing the string `knock` into the bot's Discord channel, the solenoid and LED are activated for a few seconds. If someone forgot to hang the key, this should alert them to do so.
-
 ## Hardware
-Parts:
+### Parts:
 - ESP32 board (ESP32-DevKitC V4 with the ESP-WROOM-32E module, others may work)
 - M4 30mm screw (acting as a capacitive sensor)
 - MOSFET (IRF520N)
@@ -33,9 +28,14 @@ Parts:
 - Casing (I'm using a 3D printed one from these [files](/casing))
 - Screws for the casing
 
-Schematics:
+### Schematics:
 WIP
 
-## TODOS
+## Using Keybot
+- When the capacitive sensor is activated for a second straight, the bot sends a message notifying that the key has been hung.
+- When the capacitive sensor is not activated for a second straight, the bot sends a message notifying that the key is no longer hung.
+- When any user sends a message containing the string `knock` into the bot's Discord channel, the solenoid and LED are activated for a few seconds. If someone forgot to hang the key, this should alert them to do so.
+
+### TODOS
 - [ ] schematic
 - [ ] add photos to readme
