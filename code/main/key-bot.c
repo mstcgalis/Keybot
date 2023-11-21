@@ -432,7 +432,7 @@ static void bot_event_handler(void* handler_arg, esp_event_base_t base, int32_t 
                             msg->content
                         );
 
-                        char* knocking_content = estr_cat("✊ knocking... if anyone's there, I'll get his attention");
+                        char* knocking_content = estr_cat("✊ knocking... if anyone's there, I'll get their attention");
 
                         discord_message_t knocking = {
                             .content = knocking_content,

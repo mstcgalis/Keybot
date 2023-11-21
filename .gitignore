@@ -13,3 +13,6 @@ code/sdkconfig.old
 *.swp
 .DS_Store
 Thumbs.db
+
+# Ignore secret env variables
+code/.env
