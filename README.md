@@ -14,7 +14,7 @@ The project is built around the ESP32 microcontroller utilizing the ESP-IDF fram
 3. Invite the bot to your server
 4. Get the channel ID of the Discord channel you want to use for communicating with the bot ([guide](https://support.discord.com/hc/en-us/articles/206346498-Where-can-I-find-my-User-Server-Message-ID-)) and paste into the `menuconfig`
 5. Setup WIFI SSID and Password in the `menuconfig`
-6. Test
+6. Buid, Flash and Monitor using [ESP-IDF](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/index.html)
 
 ### Using Keybot
 - When the capacitive sensor is activated for a second straight, the bot sends a message notifying that the key has been hung.
@@ -32,3 +32,7 @@ The project is built around the ESP32 microcontroller utilizing the ESP-IDF fram
 - Micro USB power supply
 - Casing (I'm using a 3D printed one from these [files](/casing))
 - Screws for the casing
+
+## TODOS
+- [ ] schematic
+- [ ] add photos to readme
