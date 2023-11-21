@@ -16,7 +16,7 @@ The project is built around the ESP32 microcontroller utilizing the ESP-IDF fram
 5. Test
 
 ### Using Keybot
-- When the capacitive sensor is activated for a second straight, the bot sends a messages notifying that the key has been hung.
+- When the capacitive sensor is activated for a second straight, the bot sends a message notifying that the key has been hung.
 - When the capacitive sensor is not activated for a second straight, the bot sends a message notifying that the key is no longer hung.
 - When any user sends a message containing the string `knock` into the bot's Discord channel, the solenoid and LED are activated for a few seconds. If someone forgot to hang the key, this should alert them to do so.
 
