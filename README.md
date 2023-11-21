@@ -6,6 +6,10 @@ The project is built around the ESP32 microcontroller utilizing the ESP-IDF fram
 
 [Research paper available here](https://danielgalis.com/posts/key-bot/)
 
+[(Not all) research resources available here](https://are.na/daniel-galis/key-bot-project)
+
+[(Not all) Datasheets available](https://are.na/daniel-galis/key-bot-project-datasheets)
+
 # How to
 
 ## Software
@@ -29,7 +33,7 @@ The project is built around the ESP32 microcontroller utilizing the ESP-IDF fram
 - Screws for the casing
 
 ### Schematics:
-WIP
+[WIP](https://sare.na/block/24840316)
 
 ## Using Keybot
 - When the capacitive sensor is activated for a second straight, the bot sends a message notifying that the key has been hung.
@@ -37,5 +41,7 @@ WIP
 - When any user sends a message containing the string `knock` into the bot's Discord channel, the solenoid and LED are activated for a few seconds. If someone forgot to hang the key, this should alert them to do so.
 
 ### TODOS
-- [ ] schematic
+- [ ] visual schematic
 - [ ] add photos to readme
+- [ ] add all component datasheets to are.na
+- [ ] add all theoretical resources to are.na
