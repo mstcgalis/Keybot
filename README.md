@@ -22,7 +22,7 @@ The project is built around the ESP32 microcontroller utilizing the ESP-IDF fram
 - When any user sends a message containing the string `knock` into the bot's Discord channel, the solenoid and LED are activated for a few seconds. If someone forgot to hang the key, this should alert them to do so.
 
 ## Hardware
-
+Parts:
 - ESP32 board (ESP32-DevKitC V4 with the ESP-WROOM-32E module, others may work)
 - M4 30mm screw (acting as a capacitive sensor)
 - MOSFET (IRF520N)
@@ -32,6 +32,9 @@ The project is built around the ESP32 microcontroller utilizing the ESP-IDF fram
 - Micro USB power supply
 - Casing (I'm using a 3D printed one from these [files](/casing))
 - Screws for the casing
+
+Schematics:
+WIP
 
 ## TODOS
 - [ ] schematic
